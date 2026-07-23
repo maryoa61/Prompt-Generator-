@@ -23,37 +23,11 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
-  signingConfigs {
-    create("release") {
-      // Only wire up a real release signing config when credentials are
-      // actually provided via environment variables. Without this guard,
-      // a release build would fail immediately on any machine that hasn't
-      // set these variables (storePassword/keyPassword would be null).
-      val keystorePath = System.getenv("KEYSTORE_PATH")
-      val storePasswordEnv = System.getenv("STORE_PASSWORD")
-      val keyAliasEnv = System.getenv("KEY_ALIAS")
-      val keyPasswordEnv = System.getenv("KEY_PASSWORD")
-      if (keystorePath != null && storePasswordEnv != null && keyAliasEnv != null && keyPasswordEnv != null) {
-        storeFile = file(keystorePath)
-        storePassword = storePasswordEnv
-        keyAlias = keyAliasEnv
-        keyPassword = keyPasswordEnv
-      }
-    }
-  }
-
   buildTypes {
     release {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      // Only apply the release signing config if it was actually configured
-      // above (i.e. KEYSTORE_PATH/STORE_PASSWORD/KEY_PASSWORD are set).
-      // Otherwise leave it unsigned so local `assembleRelease` still works
-      // (the resulting APK just won't be installable until it's signed).
-      if (System.getenv("KEYSTORE_PATH") != null) {
-        signingConfig = signingConfigs.getByName("release")
-      }
     }
     debug {
       // Use the default, auto-managed debug signingConfig (backed by the

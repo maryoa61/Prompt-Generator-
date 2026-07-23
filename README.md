@@ -16,7 +16,7 @@ A modern, native Android application designed to engineer, structure, and optimi
 - **Search & Favorites**: Filter, search, and pin favorite generated prompts.
 - **User Preferences**: Persist settings like default prompt style, auto-copy on generation, and theme preference using **Jetpack DataStore**.
 - **System Integrations**: Direct integration with Android System Clipboard (`ClipboardManager`) and native Share Sheet (`Intent.ACTION_SEND`).
-- **Adaptive Launcher Icon**: Custom Material 3 vector adaptive icon.
+- **Adaptive Launcher Icon**: Custom Material 3 vector adaptive icon
 
 ---
 
