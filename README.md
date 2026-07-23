@@ -77,7 +77,7 @@ app/src/main/java/com/example/
 4. **Run Application**:
    Select an attached physical device or an Android Virtual Device (AVD) and press **Run** (`Shift + F10`).
 
----
+----
 
 ## Testing
 
