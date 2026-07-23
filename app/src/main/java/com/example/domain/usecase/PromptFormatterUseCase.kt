@@ -50,8 +50,7 @@ class PromptFormatterUseCase @Inject constructor() {
         if (rawText.isBlank()) return ""
         return rawText
             .trim()
-            .replace(Regex("[ \\t]+"), " ")
-            .replace(Regex("\\n{3,}"), "\n\n")
+            .replace(Regex("\\s+"), " ")
     }
 
     private fun resolveKeywords(cleanedText: String, explicitKeywords: List<String>): List<String> {
