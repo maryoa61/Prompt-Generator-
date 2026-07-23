@@ -33,6 +33,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -229,65 +230,107 @@ fun GeneratorScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Generated Output Box
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("output_preview_card"),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkNavyContainer)
+                    .testTag("output_preview_card")
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "OUTPUT PREVIEW",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = DarkNavyText
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = DarkNavyContainer)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(
+                            start = 18.dp,
+                            top = 18.dp,
+                            end = 18.dp,
+                            bottom = 24.dp
                         )
-                        Row {
-                            IconButton(
-                                onClick = { viewModel.savePromptToHistory() },
-                                modifier = Modifier.testTag("save_prompt_button")
-                            ) {
-                                Icon(
-                                    imageVector = if (state.isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = "Save prompt",
-                                    tint = DarkNavyText
-                                )
-                            }
-                            IconButton(
-                                onClick = { viewModel.copyToClipboard(context) },
-                                modifier = Modifier.testTag("copy_prompt_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = "Copy prompt",
-                                    tint = DarkNavyText
-                                )
-                            }
-                            IconButton(
-                                onClick = { viewModel.sharePrompt(context) },
-                                modifier = Modifier.testTag("share_prompt_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = "Share prompt",
-                                    tint = DarkNavyText
-                                )
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "OUTPUT PREVIEW",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = DarkNavyText
+                            )
+                            Row {
+                                IconButton(
+                                    onClick = { viewModel.savePromptToHistory() },
+                                    modifier = Modifier.testTag("save_prompt_button")
+                                ) {
+                                    Icon(
+                                        imageVector = if (state.isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                        contentDescription = "Save prompt",
+                                        tint = DarkNavyText
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { viewModel.copyToClipboard(context) },
+                                    modifier = Modifier.testTag("copy_prompt_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Copy prompt",
+                                        tint = DarkNavyText
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { viewModel.sharePrompt(context) },
+                                    modifier = Modifier.testTag("share_prompt_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Share prompt",
+                                        tint = DarkNavyText
+                                    )
+                                }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutputSection(label = "ROLE", content = state.generatedRole)
+                        OutputSection(label = "TASK", content = state.generatedTask)
+                        OutputSection(label = "CONTEXT", content = state.generatedContext)
+                        OutputSection(label = "CONSTRAINTS", content = state.generatedConstraints)
+                        OutputSection(label = "OUTPUT FORMAT", content = state.generatedOutputFormat)
+
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutputSection(label = "ROLE", content = state.generatedRole)
-                    OutputSection(label = "TASK", content = state.generatedTask)
-                    OutputSection(label = "CONTEXT", content = state.generatedContext)
-                    OutputSection(label = "CONSTRAINTS", content = state.generatedConstraints)
-                    OutputSection(label = "OUTPUT FORMAT", content = state.generatedOutputFormat)
+                // Floating Action Button overlaid at bottom-end of prompt display area
+                FloatingActionButton(
+                    onClick = { viewModel.copyToClipboard(context) },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                        .testTag("copy_prompt_fab"),
+                    containerColor = PurplePrimary,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy prompt to clipboard",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Copy Prompt",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
