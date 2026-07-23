@@ -1,6 +1,8 @@
 package com.example.ui.history
 
 import android.text.format.DateFormat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -68,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.db.PromptEntity
 import com.example.domain.model.PromptStyle
+import com.example.domain.usecase.ExportFormat
 import com.example.ui.theme.DarkNavyContainer
 import com.example.ui.theme.DarkNavySubtext
 import com.example.ui.theme.DarkNavyText
@@ -78,7 +82,9 @@ import com.example.ui.theme.PurpleContainer
 import com.example.ui.theme.PurpleOnContainer
 import com.example.ui.theme.PurplePrimary
 import com.example.ui.theme.SecondaryPill
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,6 +99,18 @@ fun HistoryScreen(
 
     var selectedPromptForDetail by remember { mutableStateOf<PromptEntity?>(null) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
+    var showExportFormatDialog by remember { mutableStateOf(false) }
+    var selectedExportFormat by remember { mutableStateOf<ExportFormat?>(null) }
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("*/*")
+    ) { uri ->
+        uri?.let {
+            selectedExportFormat?.let { format ->
+                viewModel.exportHistory(context, format, it)
+            }
+        }
+    }
 
     LaunchedEffect(state.userMessage) {
         state.userMessage?.let { msg ->
@@ -123,11 +141,26 @@ fun HistoryScreen(
                     fontWeight = FontWeight.Bold
                 )
                 if (prompts.isNotEmpty()) {
-                    TextButton(
-                        onClick = { showClearConfirmDialog = true },
-                        modifier = Modifier.testTag("clear_history_button")
-                    ) {
-                        Text("Clear All", color = MaterialTheme.colorScheme.error)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = { showExportFormatDialog = true },
+                            modifier = Modifier.testTag("export_history_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FileDownload,
+                                contentDescription = "Export History",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Export")
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        TextButton(
+                            onClick = { showClearConfirmDialog = true },
+                            modifier = Modifier.testTag("clear_history_button")
+                        ) {
+                            Text("Clear All", color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
@@ -296,6 +329,86 @@ fun HistoryScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showClearConfirmDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Export Format Selection Dialog
+        if (showExportFormatDialog) {
+            AlertDialog(
+                onDismissRequest = { showExportFormatDialog = false },
+                title = { Text("Export Prompt History") },
+                text = {
+                    Column {
+                        Text("Select format to save prompt history file:")
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showExportFormatDialog = false
+                                    selectedExportFormat = ExportFormat.JSON
+                                    val fileName = "prompt_history_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.json"
+                                    createDocumentLauncher.launch(fileName)
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = SecondaryPill)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(imageVector = Icons.Default.FileDownload, contentDescription = null, tint = PurplePrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(text = "JSON (.json)", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "Structured JSON data for backup or programmatic use",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = OnSecondaryPill.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showExportFormatDialog = false
+                                    selectedExportFormat = ExportFormat.TXT
+                                    val fileName = "prompt_history_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.txt"
+                                    createDocumentLauncher.launch(fileName)
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = SecondaryPill)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(imageVector = Icons.Default.FileDownload, contentDescription = null, tint = PurplePrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(text = "Plain Text (.txt)", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "Human-readable formatted document",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = OnSecondaryPill.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showExportFormatDialog = false }) {
                         Text("Cancel")
                     }
                 }

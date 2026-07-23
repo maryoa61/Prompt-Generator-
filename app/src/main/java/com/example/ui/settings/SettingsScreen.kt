@@ -1,5 +1,7 @@
 package com.example.ui.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Style
@@ -33,11 +36,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,17 +53,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.PromptStyle
+import com.example.domain.usecase.ExportFormat
 import com.example.ui.theme.M3OutlineVariant
 import com.example.ui.theme.OnSecondaryPill
 import com.example.ui.theme.PurpleContainer
 import com.example.ui.theme.PurpleOnContainer
 import com.example.ui.theme.PurplePrimary
 import com.example.ui.theme.SecondaryPill
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun SettingsScreen(
@@ -65,15 +76,39 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
+    val userMessage by viewModel.userMessage.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
     var showStyleDropdown by remember { mutableStateOf(false) }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
+    var showExportFormatDialog by remember { mutableStateOf(false) }
+    var selectedExportFormat by remember { mutableStateOf<ExportFormat?>(null) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("*/*")
+    ) { uri ->
+        uri?.let {
+            selectedExportFormat?.let { format ->
+                viewModel.exportHistory(context, format, it)
+            }
+        }
+    }
+
+    LaunchedEffect(userMessage) {
+        userMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearUserMessage()
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
@@ -198,6 +233,16 @@ fun SettingsScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 SettingsRowItem(
+                    icon = Icons.Default.FileDownload,
+                    title = "Export Prompt History",
+                    subtitle = "Save history to JSON or Plain Text file via Storage Access Framework",
+                    onClick = { showExportFormatDialog = true },
+                    testTag = "setting_export_history_row"
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = M3OutlineVariant.copy(alpha = 0.5f))
+
+                SettingsRowItem(
                     icon = Icons.Default.DeleteSweep,
                     title = "Clear Prompt History",
                     subtitle = "Permanently delete all stored prompts from Room DB",
@@ -282,6 +327,92 @@ fun SettingsScreen(
                 }
             )
         }
+
+        // Export Format Selection Dialog
+        if (showExportFormatDialog) {
+            AlertDialog(
+                onDismissRequest = { showExportFormatDialog = false },
+                title = { Text("Export Prompt History") },
+                text = {
+                    Column {
+                        Text("Select format to save prompt history file:")
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showExportFormatDialog = false
+                                    selectedExportFormat = ExportFormat.JSON
+                                    val fileName = "prompt_history_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.json"
+                                    createDocumentLauncher.launch(fileName)
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = SecondaryPill)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(imageVector = Icons.Default.FileDownload, contentDescription = null, tint = PurplePrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(text = "JSON (.json)", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "Structured JSON data for backup or programmatic use",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = OnSecondaryPill.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showExportFormatDialog = false
+                                    selectedExportFormat = ExportFormat.TXT
+                                    val fileName = "prompt_history_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.txt"
+                                    createDocumentLauncher.launch(fileName)
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = SecondaryPill)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(imageVector = Icons.Default.FileDownload, contentDescription = null, tint = PurplePrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(text = "Plain Text (.txt)", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "Human-readable formatted document",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = OnSecondaryPill.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showExportFormatDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
+
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
     }
 }
 

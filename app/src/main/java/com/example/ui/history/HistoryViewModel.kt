@@ -4,10 +4,13 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.db.PromptEntity
 import com.example.data.repository.PromptRepository
+import com.example.domain.usecase.ExportFormat
+import com.example.domain.usecase.ExportPromptHistoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -31,7 +35,8 @@ data class HistoryUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
-    private val repository: PromptRepository
+    private val repository: PromptRepository,
+    private val exportPromptHistoryUseCase: ExportPromptHistoryUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistoryUiState())
@@ -105,6 +110,25 @@ class HistoryViewModel @Inject constructor(
         }
         val shareIntent = Intent.createChooser(sendIntent, "Share Prompt")
         context.startActivity(shareIntent)
+    }
+
+    fun exportHistory(context: Context, format: ExportFormat, uri: Uri) {
+        viewModelScope.launch {
+            val list = repository.allPrompts.first()
+            if (list.isEmpty()) {
+                _uiState.update { it.copy(userMessage = "No prompts to export") }
+                return@launch
+            }
+            val success = when (format) {
+                ExportFormat.JSON -> exportPromptHistoryUseCase.exportToJson(context, list, uri)
+                ExportFormat.TXT -> exportPromptHistoryUseCase.exportToText(context, list, uri)
+            }
+            if (success) {
+                _uiState.update { it.copy(userMessage = "Exported ${list.size} prompts successfully!") }
+            } else {
+                _uiState.update { it.copy(userMessage = "Export failed. Please try again.") }
+            }
+        }
     }
 
     fun clearUserMessage() {
