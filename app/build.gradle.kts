@@ -12,6 +12,18 @@ android {
   namespace = "com.example"
   compileSdk = 36
 
+  signingConfigs {
+    create("release") {
+      val keystorePath = System.getenv("KEYSTORE_PATH")
+      if (keystorePath != null) {
+        storeFile = file(keystorePath)
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = System.getenv("KEY_ALIAS")
+        keyPassword = System.getenv("KEY_PASSWORD")
+      }
+    }
+  }
+
   defaultConfig {
     applicationId = "com.aistudio.promptgenerator.xyzkmb"
     minSdk = 26
@@ -25,6 +37,7 @@ android {
 
   buildTypes {
     release {
+      signingConfig = signingConfigs.getByName("release")
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
