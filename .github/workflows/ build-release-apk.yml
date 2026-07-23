@@ -60,8 +60,14 @@ jobs:
         if: ${{ env.HAS_KEYSTORE == 'true' }}
         run: |
           KEYSTORE_PATH="${RUNNER_TEMP}/release.jks"
-          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > "$KEYSTORE_PATH"
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | tr -d '[:space:]' | base64 -d --ignore-garbage > "$KEYSTORE_PATH"
           echo "keystore_path=$KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
+
+          if [ ! -s "$KEYSTORE_PATH" ]; then
+            echo "::error::Decoded keystore is empty - check the DEBUG_KEYSTORE_BASE64 secret value."
+            exit 1
+          fi
+          echo "Decoded keystore size: $(wc -c < "$KEYSTORE_PATH") bytes"
 
       - name: Build release APK
         env:
