@@ -1,0 +1,6 @@
+{
+  "name": "Prompt Generator",
+  "description": "Native Android app that analyzes text input and generates structured, professional AI prompts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
