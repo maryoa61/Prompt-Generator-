@@ -46,6 +46,23 @@ class PromptFormatterUseCase @Inject constructor() {
         )
     }
 
+    /**
+     * Public helper used by [GeneratePromptUseCase] to build a clean list of
+     * keywords from the raw user input without generating the full nested
+     * template (see [generate]).
+     */
+    fun extractKeywords(rawText: String, explicitKeywords: List<String> = emptyList()): List<String> {
+        val cleaned = normalizeText(rawText)
+        return resolveKeywords(cleaned, explicitKeywords)
+    }
+
+    /**
+     * Public helper exposing the same text-cleaning logic used internally,
+     * useful for callers that only need normalized text (e.g. building a
+     * task/context string) without the full template.
+     */
+    fun cleanText(rawText: String): String = normalizeText(rawText)
+
     private fun normalizeText(rawText: String): String {
         if (rawText.isBlank()) return ""
         return rawText

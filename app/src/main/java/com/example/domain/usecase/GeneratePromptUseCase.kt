@@ -1,9 +1,7 @@
 package com.example.domain.usecase
 
-import com.example.domain.model.GeneratedPrompt
 import com.example.domain.model.PromptStyle
 import com.example.domain.model.PromptTemplate
-import com.example.domain.model.UserPromptInput
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,13 +16,6 @@ class GeneratePromptUseCase @Inject constructor(
         customRole: String? = null,
         customConstraints: String? = null
     ): PromptTemplate {
-        val input = UserPromptInput(
-            rawText = inputText,
-            keywords = emptyList(),
-            style = style
-        )
-        val generatedPrompt: GeneratedPrompt = promptFormatterUseCase.generate(input)
-
         val role = if (!customRole.isNullOrBlank()) customRole else style.defaultRole
         val constraints = if (!customConstraints.isNullOrBlank()) {
             "${style.defaultConstraints}\n- Additional Constraints: $customConstraints"
@@ -32,10 +23,27 @@ class GeneratePromptUseCase @Inject constructor(
             style.defaultConstraints
         }
 
+        // Build a proper CONTEXT string: the style's base context description,
+        // enriched with keywords extracted from the user's input (if any).
+        // NOTE: previously this incorrectly embedded the *entire* nested
+        // formatted template (role/context/task/constraints/output format)
+        // produced by PromptFormatterUseCase.generate() into this single
+        // CONTEXT field, which duplicated content and broke the output.
+        val keywords = promptFormatterUseCase.extractKeywords(inputText)
+        val context = if (keywords.isNotEmpty()) {
+            buildString {
+                append(style.defaultContext)
+                append("\n\nKey Focus Areas:\n")
+                append(keywords.joinToString(separator = "\n") { "• $it" })
+            }
+        } else {
+            style.defaultContext
+        }
+
         return PromptTemplate(
             style = style,
             role = role,
-            context = generatedPrompt.formattedPrompt,
+            context = context,
             task = if (inputText.isNotBlank()) inputText.trim() else "Execute ${style.displayName} task",
             constraints = constraints,
             outputFormat = style.defaultOutputFormat
