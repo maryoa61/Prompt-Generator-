@@ -19,6 +19,11 @@ jobs:
     name: Build & sign release APK
     runs-on: ubuntu-latest
 
+    # Job-level env, computed once, so it can be safely referenced in a
+    # step's `if:` condition (secrets.* cannot be used directly in `if:`).
+    env:
+      HAS_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE_BASE64 != '' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,7 +44,7 @@ jobs:
       # failing.
       - name: Decode signing keystore (if configured)
         id: keystore
-        if: ${{ secrets.DEBUG_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
         run: |
           KEYSTORE_PATH="${RUNNER_TEMP}/release.jks"
           echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > "$KEYSTORE_PATH"
