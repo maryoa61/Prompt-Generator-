@@ -8,7 +8,6 @@ import com.example.data.remote.GeminiGenerationConfig
 import com.example.data.remote.GeminiPart
 import com.example.data.remote.GeminiRequest
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,7 +54,7 @@ class AiPromptRepositoryImpl @Inject constructor(
             ?.text
             ?: throw IllegalStateException("Gemini returned an empty response.")
 
-        val adapter = moshi.adapter<AiPromptDto>()
+        val adapter = moshi.adapter(AiPromptDto::class.java)
         return adapter.fromJson(rawJson)
             ?: throw IllegalStateException("Could not parse Gemini's JSON reply: $rawJson")
     }
