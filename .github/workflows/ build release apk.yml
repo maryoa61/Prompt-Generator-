@@ -80,6 +80,12 @@ jobs:
           fi
           echo "Decoded keystore size: $(wc -c < "$KEYSTORE_PATH") bytes"
 
+      # The Secrets Gradle Plugin reads app/.env at build time and turns
+      # GEMINI_API_KEY into BuildConfig.GEMINI_API_KEY. .env is gitignored
+      # (never committed), so we generate it here from the repo secret.
+      - name: Create .env file
+        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > app/.env
+
       - name: Build release APK
         env:
           KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore_path }}
