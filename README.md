@@ -1,6 +1,7 @@
 # Prompt Generator for Android
 
 A modern, native Android application designed to engineer, structure, and optimize high-quality AI/LLM prompts. Engineered using **Jetpack Compose**, **Material 3**, **Clean Architecture**, **Hilt**, **Room Database**, and **Jetpack DataStore**.
+
 ---
 
 ## Features
@@ -15,7 +16,7 @@ A modern, native Android application designed to engineer, structure, and optimi
 - **Search & Favorites**: Filter, search, and pin favorite generated prompts.
 - **User Preferences**: Persist settings like default prompt style, auto-copy on generation, and theme preference using **Jetpack DataStore**.
 - **System Integrations**: Direct integration with Android System Clipboard (`ClipboardManager`) and native Share Sheet (`Intent.ACTION_SEND`).
-- **Adaptive Launcher Icon**: Custom Material 3 vector adaptive icon
+- **Adaptive Launcher Icon**: Custom Material 3 vector adaptive icon.
 
 ---
 
@@ -76,7 +77,7 @@ app/src/main/java/com/example/
 4. **Run Application**:
    Select an attached physical device or an Android Virtual Device (AVD) and press **Run** (`Shift + F10`).
 
-----
+---
 
 ## Testing
 

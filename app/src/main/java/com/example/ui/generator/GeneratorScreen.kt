@@ -41,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -253,11 +254,55 @@ fun GeneratorScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "OUTPUT PREVIEW",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = DarkNavyText
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "OUTPUT PREVIEW",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = DarkNavyText
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                if (state.isGeminiGenerated) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = PurplePrimary.copy(alpha = 0.2f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = null,
+                                                tint = PurplePrimary,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Gemini AI",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = PurplePrimary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color.White.copy(alpha = 0.1f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Offline Fallback",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = DarkNavyText.copy(alpha = 0.8f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                             Row {
                                 IconButton(
                                     onClick = { viewModel.savePromptToHistory() },
@@ -290,6 +335,15 @@ fun GeneratorScreen(
                                     )
                                 }
                             }
+                        }
+
+                        if (!state.isGeminiGenerated && state.fallbackReason != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Notice: ${state.fallbackReason}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFFFB74D)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))

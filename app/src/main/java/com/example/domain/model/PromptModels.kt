@@ -74,7 +74,8 @@ data class PromptTemplate(
     val context: String,
     val task: String,
     val constraints: String,
-    val outputFormat: String
+    val outputFormat: String,
+    val isGeminiGenerated: Boolean = false
 ) {
     fun toFormattedString(): String {
         return """
