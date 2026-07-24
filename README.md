@@ -1,7 +1,6 @@
 # Prompt Generator for Android
 
 A modern, native Android application designed to engineer, structure, and optimize high-quality AI/LLM prompts. Engineered using **Jetpack Compose**, **Material 3**, **Clean Architecture**, **Hilt**, **Room Database**, and **Jetpack DataStore**.
-
 ---
 
 ## Features
