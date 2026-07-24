@@ -81,8 +81,16 @@ class PromptFormatterUseCase @Inject constructor() {
             }
         }
 
-        // Parse comma-separated keywords if embedded in input
-        if (combined.isEmpty() && cleanedText.contains(",")) {
+        // Parse comma-separated keywords if embedded in input.
+        // IMPORTANT: only do this when the text genuinely looks like a short
+        // comma-separated list (e.g. "Kotlin, Android, VPN"), NOT when it's a
+        // full sentence/paragraph that merely happens to contain commas -
+        // otherwise a clause like "...set the MTU to `1400`, and set the DNS
+        // to..." gets sliced out and duplicated as a standalone "keyword"
+        // even though it's just part of one larger instruction.
+        val looksLikeSentenceOrParagraph = cleanedText.contains(Regex("[.!?]")) ||
+            cleanedText.length > 150
+        if (combined.isEmpty() && cleanedText.contains(",") && !looksLikeSentenceOrParagraph) {
             val parts = cleanedText.split(",")
             if (parts.size >= 2) {
                 parts.map { it.trim() }.filter { it.isNotBlank() && it.length <= 40 }.forEach {

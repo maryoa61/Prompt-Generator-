@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.db.PromptEntity
 import com.example.data.repository.PromptRepository
 import com.example.domain.model.PromptStyle
+import com.example.domain.usecase.GenerateAiPromptUseCase
 import com.example.domain.usecase.GeneratePromptUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +37,8 @@ data class GeneratorUiState(
 @HiltViewModel
 class GeneratorViewModel @Inject constructor(
     private val repository: PromptRepository,
-    private val generatePromptUseCase: GeneratePromptUseCase
+    private val generatePromptUseCase: GeneratePromptUseCase,
+    private val generateAiPromptUseCase: GenerateAiPromptUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GeneratorUiState())
@@ -64,10 +66,30 @@ class GeneratorViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isGenerating = true) }
             val state = _uiState.value
-            val template = generatePromptUseCase(
-                inputText = state.inputText,
-                style = state.selectedStyle
-            )
+
+            // Prefer the Gemini-backed generator (understands any input
+            // language, e.g. Persian, and always writes the prompt in
+            // English). Fall back to the local offline template if no API
+            // key is configured or the network call fails for any reason.
+            val (template, fallbackMessage) = if (generateAiPromptUseCase.hasApiKey()) {
+                try {
+                    generateAiPromptUseCase(
+                        inputText = state.inputText,
+                        style = state.selectedStyle
+                    ) to null
+                } catch (e: Exception) {
+                    generatePromptUseCase(
+                        inputText = state.inputText,
+                        style = state.selectedStyle
+                    ) to "AI generation failed (${e.message ?: "network error"}), used offline template instead."
+                }
+            } else {
+                generatePromptUseCase(
+                    inputText = state.inputText,
+                    style = state.selectedStyle
+                ) to "No Gemini API key configured - used offline template. Add GEMINI_API_KEY to .env to enable AI generation."
+            }
+
             val fullPrompt = template.toFormattedString()
 
             _uiState.update {
@@ -79,7 +101,8 @@ class GeneratorViewModel @Inject constructor(
                     generatedOutputFormat = template.outputFormat,
                     fullGeneratedPrompt = fullPrompt,
                     isGenerating = false,
-                    isSaved = false
+                    isSaved = false,
+                    userMessage = fallbackMessage ?: it.userMessage
                 )
             }
 
