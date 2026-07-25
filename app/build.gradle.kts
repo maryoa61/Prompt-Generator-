@@ -12,6 +12,18 @@ android {
   namespace = "com.example"
   compileSdk = 36
 
+  signingConfigs {
+    create("release") {
+      val keystorePath = System.getenv("KEYSTORE_PATH")
+      if (keystorePath != null) {
+        storeFile = file(keystorePath)
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = System.getenv("KEY_ALIAS")
+        keyPassword = System.getenv("KEY_PASSWORD")
+      }
+    }
+  }
+
   defaultConfig {
     applicationId = "com.aistudio.promptgenerator.xyzkmb"
     minSdk = 26
@@ -23,30 +35,20 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
-  signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
-    }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
-  }
-
   buildTypes {
     release {
+      signingConfig = signingConfigs.getByName("release")
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    debug {
+      // Use the default, auto-managed debug signingConfig (backed by the
+      // standard ~/.android/debug.keystore that Android Studio/AGP creates
+      // automatically). The project previously pointed this at a custom
+      // "debug.keystore" file that was never committed to the repo, which
+      // made every debug build fail with a "keystore not found" error.
+    }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -73,7 +75,7 @@ secrets {
 // This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
-  // implementation(platform(libs.firebase.bom))
+  // implementation(platform(libs.firebase.bom)) // No longer needed: replaced Gemini/Firebase AI with the NVIDIA API
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
   // implementation(libs.androidx.camera.camera2)
@@ -98,7 +100,7 @@ dependencies {
   implementation(libs.androidx.room.runtime)
   // implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
-  // implementation(libs.firebase.ai)
+  // implementation(libs.firebase.ai) // Replaced by direct NVIDIA NIM API calls via Retrofit (see data/remote)
   // Uncomment to use Firestore:
   // implementation(libs.firebase.firestore)
 
@@ -109,7 +111,7 @@ dependencies {
   // implementation(libs.androidx.credentials)
   // implementation(libs.androidx.credentials.play.services)
   // implementation(libs.googleid)
-  // implementation(libs.firebase.appcheck.recaptcha)
+  // implementation(libs.firebase.appcheck.recaptcha) // No longer needed without Firebase AI
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
@@ -133,7 +135,7 @@ dependencies {
   androidTestImplementation(libs.androidx.runner)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
-  ksp(libs.hilt.compiler)
-  ksp(libs.androidx.room.compiler)
-  ksp(libs.moshi.kotlin.codegen)
+  "ksp"(libs.hilt.compiler)
+  "ksp"(libs.androidx.room.compiler)
+  "ksp"(libs.moshi.kotlin.codegen)
 }
