@@ -56,6 +56,12 @@ enum class PromptStyle(
     }
 }
 
+/** Where a generated prompt came from, surfaced to the UI as a small badge/notice. */
+enum class PromptSource {
+    AI,
+    OFFLINE_FALLBACK
+}
+
 data class UserPromptInput(
     val rawText: String,
     val keywords: List<String> = emptyList(),
@@ -74,8 +80,7 @@ data class PromptTemplate(
     val context: String,
     val task: String,
     val constraints: String,
-    val outputFormat: String,
-    val isGeminiGenerated: Boolean = false
+    val outputFormat: String
 ) {
     fun toFormattedString(): String {
         return """

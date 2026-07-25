@@ -46,6 +46,23 @@ class PromptFormatterUseCase @Inject constructor() {
         )
     }
 
+    /**
+     * Public helper used by [GeneratePromptUseCase] to build a clean list of
+     * keywords from the raw user input without generating the full nested
+     * template (see [generate]).
+     */
+    fun extractKeywords(rawText: String, explicitKeywords: List<String> = emptyList()): List<String> {
+        val cleaned = normalizeText(rawText)
+        return resolveKeywords(cleaned, explicitKeywords)
+    }
+
+    /**
+     * Public helper exposing the same text-cleaning logic used internally,
+     * useful for callers that only need normalized text (e.g. building a
+     * task/context string) without the full template.
+     */
+    fun cleanText(rawText: String): String = normalizeText(rawText)
+
     private fun normalizeText(rawText: String): String {
         if (rawText.isBlank()) return ""
         return rawText
@@ -64,8 +81,15 @@ class PromptFormatterUseCase @Inject constructor() {
             }
         }
 
-        // Parse comma-separated keywords if embedded in input
-        if (combined.isEmpty() && cleanedText.contains(",")) {
+        // Parse comma-separated keywords if embedded in input.
+        // Only do this when the text genuinely looks like a short
+        // comma-separated list (e.g. "Kotlin, Android, VPN"), NOT when it's a
+        // full sentence/paragraph that merely happens to contain commas -
+        // otherwise a clause gets sliced out and duplicated as a standalone
+        // "keyword" even though it's just part of one larger instruction.
+        val looksLikeSentenceOrParagraph = cleanedText.contains(Regex("[.!?]")) ||
+            cleanedText.length > 150
+        if (combined.isEmpty() && cleanedText.contains(",") && !looksLikeSentenceOrParagraph) {
             val parts = cleanedText.split(",")
             if (parts.size >= 2) {
                 parts.map { it.trim() }.filter { it.isNotBlank() && it.length <= 40 }.forEach {

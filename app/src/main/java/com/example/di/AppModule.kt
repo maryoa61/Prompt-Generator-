@@ -4,8 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import com.example.data.local.db.AppDatabase
 import com.example.data.local.db.PromptDao
-import com.example.domain.usecase.GeneratePromptUseCase
-import com.example.domain.usecase.PromptFormatterUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,17 +30,8 @@ object AppModule {
         return appDatabase.promptDao()
     }
 
-    @Provides
-    @Singleton
-    fun providePromptFormatterUseCase(): PromptFormatterUseCase {
-        return PromptFormatterUseCase()
-    }
-
-    @Provides
-    @Singleton
-    fun provideGeneratePromptUseCase(
-        promptFormatterUseCase: PromptFormatterUseCase
-    ): GeneratePromptUseCase {
-        return GeneratePromptUseCase(promptFormatterUseCase)
-    }
+    // PromptFormatterUseCase, GeneratePromptUseCase, and AiPromptDataSource
+    // all declare their own @Inject constructor, so Hilt provides them
+    // automatically - no explicit @Provides needed (and adding one here
+    // would create a duplicate-binding compile error).
 }

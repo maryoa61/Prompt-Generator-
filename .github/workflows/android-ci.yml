@@ -1,0 +1,74 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # gradle-wrapper.jar is a binary file. If it's ever missing (e.g. it
+      # got stripped by an export tool, or was accidentally excluded from a
+      # commit), regenerate it here using the Gradle version that is
+      # pre-installed on GitHub-hosted runners. This means CI can never be
+      # blocked by a missing wrapper jar again.
+      - name: Ensure Gradle wrapper exists
+        run: |
+          if [ ! -s gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "gradle-wrapper.jar is missing or empty — regenerating it"
+            GRADLE_VERSION=$(grep -oP 'distributionUrl=.*gradle-\K[0-9.]+(?=-bin\.zip)' gradle/wrapper/gradle-wrapper.properties)
+            gradle wrapper --gradle-version "$GRADLE_VERSION" --distribution-type bin
+          else
+            echo "gradle-wrapper.jar already present, skipping regeneration"
+          fi
+          chmod +x ./gradlew
+
+      # If the step above had to regenerate the jar, commit it back to the
+      # repo so future runs (and local `git clone`s) don't hit the same
+      # problem. This is a no-op when nothing changed.
+      - name: Commit regenerated wrapper (if needed)
+        if: github.event_name == 'push'
+        run: |
+          if ! git diff --quiet -- gradle/wrapper/gradle-wrapper.jar; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add gradle/wrapper/gradle-wrapper.jar
+            git commit -m "ci: regenerate missing gradle-wrapper.jar [skip ci]"
+            git push
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Lint
+        run: ./gradlew lintDebug --no-daemon
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

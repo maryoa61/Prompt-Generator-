@@ -25,14 +25,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +44,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.domain.model.PromptSource
 import com.example.domain.model.PromptStyle
 import com.example.ui.theme.DarkNavyContainer
 import com.example.ui.theme.DarkNavySubtext
@@ -208,6 +211,7 @@ fun GeneratorScreen(
             // Generate Button
             Button(
                 onClick = { viewModel.generatePrompt() },
+                enabled = !state.isGenerating,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp)
@@ -215,17 +219,31 @@ fun GeneratorScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary)
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "GENERATE PROMPT",
-                    style = MaterialTheme.typography.labelLarge,
-                    letterSpacing = 1.2.sp
-                )
+                if (state.isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "ASKING NVIDIA AI…",
+                        style = MaterialTheme.typography.labelLarge,
+                        letterSpacing = 1.2.sp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "GENERATE PROMPT",
+                        style = MaterialTheme.typography.labelLarge,
+                        letterSpacing = 1.2.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -261,47 +279,7 @@ fun GeneratorScreen(
                                     color = DarkNavyText
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                if (state.isGeminiGenerated) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = PurplePrimary.copy(alpha = 0.2f)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.AutoAwesome,
-                                                contentDescription = null,
-                                                tint = PurplePrimary,
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = "Gemini AI",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = PurplePrimary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = Color.White.copy(alpha = 0.1f)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "Offline Fallback",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = DarkNavyText.copy(alpha = 0.8f)
-                                            )
-                                        }
-                                    }
-                                }
+                                SourceBadge(source = state.promptSource)
                             }
                             Row {
                                 IconButton(
@@ -337,12 +315,12 @@ fun GeneratorScreen(
                             }
                         }
 
-                        if (!state.isGeminiGenerated && state.fallbackReason != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                        state.notice?.let { notice ->
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Notice: ${state.fallbackReason}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFFFB74D)
+                                text = notice,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFF5A623)
                             )
                         }
 
@@ -443,6 +421,35 @@ fun GeneratorScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun SourceBadge(source: PromptSource) {
+    val (label, icon, color) = when (source) {
+        PromptSource.AI -> Triple("NVIDIA AI", Icons.Default.Bolt, Color(0xFF4CAF50))
+        PromptSource.OFFLINE_FALLBACK -> Triple("Offline Fallback", Icons.Default.CloudOff, Color(0xFFF5A623))
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color.copy(alpha = 0.16f))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(12.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Bold
         )
     }
 }

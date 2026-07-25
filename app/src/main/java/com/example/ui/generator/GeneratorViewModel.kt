@@ -8,9 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.db.PromptEntity
 import com.example.data.repository.PromptRepository
+import com.example.domain.model.PromptSource
 import com.example.domain.model.PromptStyle
-import com.example.domain.usecase.AiPromptResult
-import com.example.domain.usecase.GenerateAiPromptUseCase
+import com.example.domain.usecase.GeneratePromptUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,16 +30,16 @@ data class GeneratorUiState(
     val generatedOutputFormat: String = "1. Technical Overview & Architecture\n2. Implementation Snippet\n3. Trade-offs",
     val fullGeneratedPrompt: String = "",
     val isGenerating: Boolean = false,
-    val isGeminiGenerated: Boolean = false,
-    val fallbackReason: String? = null,
     val isSaved: Boolean = false,
-    val userMessage: String? = null
+    val userMessage: String? = null,
+    val promptSource: PromptSource = PromptSource.OFFLINE_FALLBACK,
+    val notice: String? = null
 )
 
 @HiltViewModel
 class GeneratorViewModel @Inject constructor(
     private val repository: PromptRepository,
-    private val generateAiPromptUseCase: GenerateAiPromptUseCase
+    private val generatePromptUseCase: GeneratePromptUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GeneratorUiState())
@@ -65,19 +65,15 @@ class GeneratorViewModel @Inject constructor(
 
     fun generatePrompt() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isGenerating = true, fallbackReason = null) }
+            _uiState.update { it.copy(isGenerating = true, notice = null) }
             val state = _uiState.value
-
-            val result = generateAiPromptUseCase(
+            // Tries the NVIDIA API first; automatically falls back to fully
+            // offline/local generation if the key is missing or the call fails.
+            val result = generatePromptUseCase(
                 inputText = state.inputText,
                 style = state.selectedStyle
             )
-
-            val (template, isGemini, reason) = when (result) {
-                is AiPromptResult.Success -> Triple(result.template, true, null)
-                is AiPromptResult.Fallback -> Triple(result.template, false, result.reason)
-            }
-
+            val template = result.template
             val fullPrompt = template.toFormattedString()
 
             _uiState.update {
@@ -89,10 +85,9 @@ class GeneratorViewModel @Inject constructor(
                     generatedOutputFormat = template.outputFormat,
                     fullGeneratedPrompt = fullPrompt,
                     isGenerating = false,
-                    isGeminiGenerated = isGemini,
-                    fallbackReason = reason,
                     isSaved = false,
-                    userMessage = if (!isGemini && reason != null) "Using offline generator ($reason)" else null
+                    promptSource = result.source,
+                    notice = result.notice
                 )
             }
 
