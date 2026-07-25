@@ -2,6 +2,20 @@
 
 A modern, native Android application designed to engineer, structure, and optimize high-quality AI/LLM prompts. Engineered using **Jetpack Compose**, **Material 3**, **Clean Architecture**, **Hilt**, **Room Database**, and **Jetpack DataStore**.
 
+Prompt generation is powered by the **NVIDIA NIM API** (build.nvidia.com), an OpenAI-compatible endpoint offering free access to dozens of hosted LLMs. If no API key is configured, or a call fails, the app automatically falls back to a fully offline/local template generator — the app always works, online or off.
+
+---
+
+## AI Setup (NVIDIA API)
+
+1. Create a free API key at [build.nvidia.com/settings/api-keys](https://build.nvidia.com/settings/api-keys) (starts with `nvapi-`).
+2. Copy `.env.example` to a new file named `.env` in the project root.
+3. Set `NVIDIA_API_KEY=nvapi-...` in `.env` (this file is git-ignored, so your key stays local).
+4. Optionally set `NVIDIA_MODEL=` to any model id from the [NVIDIA API Catalog](https://build.nvidia.com/models) (defaults to `nvidia/llama-3.3-nemotron-super-49b-v1.5`).
+5. Rebuild the app. The Secrets Gradle Plugin injects these values into `BuildConfig` at compile time.
+
+Without a key, the **Generate Prompt** button still works — it just uses the local template engine and shows an "Offline Fallback" badge in the output preview.
+
 ---
 
 ## Features
@@ -16,7 +30,7 @@ A modern, native Android application designed to engineer, structure, and optimi
 - **Search & Favorites**: Filter, search, and pin favorite generated prompts.
 - **User Preferences**: Persist settings like default prompt style, auto-copy on generation, and theme preference using **Jetpack DataStore**.
 - **System Integrations**: Direct integration with Android System Clipboard (`ClipboardManager`) and native Share Sheet (`Intent.ACTION_SEND`).
-- **Adaptive Launcher Icon**: Custom Material 3 vector adaptive icon.
+- **Adaptive Launcher Icon**: Custom Material 3 vector adaptive icon
 
 ---
 
@@ -30,6 +44,7 @@ A modern, native Android application designed to engineer, structure, and optimi
 - **Key-Value Storage**: [Jetpack DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (Preferences)
 - **Asynchronous Operations**: Kotlin Coroutines & `StateFlow`
 - **Navigation**: Jetpack Navigation Compose
+- **AI Prompt Generation**: [NVIDIA NIM API](https://build.nvidia.com) via Retrofit + Moshi + OkHttp, with automatic offline fallback
 
 ---
 
@@ -41,8 +56,9 @@ app/src/main/java/com/example/
 │   ├── local/
 │   │   ├── datastore/       # UserPreferencesDataStore
 │   │   └── db/              # Room AppDatabase, PromptDao, PromptEntity
+│   ├── remote/               # NVIDIA API: NvidiaApiService, models, AiPromptDataSource
 │   └── repository/          # PromptRepository & PromptRepositoryImpl
-├── di/                      # Hilt AppModule & RepositoryModule
+├── di/                      # Hilt AppModule, NetworkModule & RepositoryModule
 ├── domain/
 │   ├── model/               # PromptStyle, UserPromptInput, PromptTemplate
 │   └── usecase/             # GeneratePromptUseCase, PromptFormatterUseCase
@@ -77,7 +93,7 @@ app/src/main/java/com/example/
 4. **Run Application**:
    Select an attached physical device or an Android Virtual Device (AVD) and press **Run** (`Shift + F10`).
 
----
+----
 
 ## Testing
 
