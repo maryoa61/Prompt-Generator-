@@ -58,8 +58,12 @@ jobs:
       # (never committed), so we generate it here from the repo secret.
       - name: Create .env file
         run: |
+          MODEL_VALUE="${{ secrets.NVIDIA_MODEL }}"
+          if [ -z "$MODEL_VALUE" ]; then
+            MODEL_VALUE="nvidia/llama-3.3-nemotron-super-49b-v1.5"
+          fi
           echo "NVIDIA_API_KEY=${{ secrets.NVIDIA_API_KEY }}" > app/.env
-          echo "NVIDIA_MODEL=${{ secrets.NVIDIA_MODEL }}" >> app/.env
+          echo "NVIDIA_MODEL=$MODEL_VALUE" >> app/.env
       - name: Build release APK
         env:
           KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore_path }}
