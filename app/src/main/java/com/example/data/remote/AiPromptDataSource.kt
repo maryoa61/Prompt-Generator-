@@ -15,12 +15,12 @@ import javax.inject.Singleton
 sealed interface AiPromptResult {
     data class Success(val text: String) : AiPromptResult
     data class Failure(val reason: String) : AiPromptResult
-    /** The user has not configured an NVIDIA_API_KEY in their local .env file. */
+    /** The user has not configured a GROQ_API_KEY in their local .env file. */
     data object NotConfigured : AiPromptResult
 }
 
 /**
- * Talks to the NVIDIA NIM chat completions endpoint (build.nvidia.com) to
+ * Talks to the Groq chat completions endpoint (console.groq.com) to
  * turn raw user keywords into a fully structured prompt for a given
  * [PromptStyle]. Falls back gracefully (via [AiPromptResult]) so callers can
  * always fall back to fully offline/local template generation.
@@ -31,9 +31,9 @@ class AiPromptDataSource @Inject constructor(
     private val moshi: Moshi
 ) {
 
-    private val apiKey: String get() = BuildConfig.NVIDIA_API_KEY
+    private val apiKey: String get() = BuildConfig.GROQ_API_KEY
     private val model: String
-        get() = BuildConfig.NVIDIA_MODEL.ifBlank { DEFAULT_MODEL }
+        get() = BuildConfig.GROQ_MODEL.ifBlank { DEFAULT_MODEL }
 
     suspend fun generateStructuredPrompt(
         style: PromptStyle,
@@ -65,20 +65,20 @@ class AiPromptDataSource @Inject constructor(
             if (!response.isSuccessful) {
                 val message = parseErrorMessage(response.errorBody()?.string())
                 return@withContext AiPromptResult.Failure(
-                    "NVIDIA API error (${response.code()}): $message"
+                    "Groq API error (${response.code()}): $message"
                 )
             }
 
             val content = response.body()?.choices?.firstOrNull()?.message?.content
             if (content.isNullOrBlank()) {
-                AiPromptResult.Failure("Empty response from NVIDIA API")
+                AiPromptResult.Failure("Empty response from Groq API")
             } else {
                 AiPromptResult.Success(content.trim())
             }
         } catch (e: IOException) {
-            AiPromptResult.Failure(e.message ?: "Network error while calling NVIDIA API")
+            AiPromptResult.Failure(e.message ?: "Network error while calling Groq API")
         } catch (e: Exception) {
-            AiPromptResult.Failure(e.message ?: "Unexpected error while calling NVIDIA API")
+            AiPromptResult.Failure(e.message ?: "Unexpected error while calling Groq API")
         }
     }
 
@@ -128,9 +128,9 @@ class AiPromptDataSource @Inject constructor(
     }
 
     companion object {
-        // A solid general-purpose default from the NVIDIA API Catalog.
-        // Any model id from https://build.nvidia.com/models can be used instead
-        // by setting NVIDIA_MODEL in the local .env file.
-        private const val DEFAULT_MODEL = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
+        // A solid general-purpose default from Groq's model catalog.
+        // Any model id from https://console.groq.com/docs/models can be used
+        // instead by setting GROQ_MODEL in the local .env file.
+        private const val DEFAULT_MODEL = "llama-3.3-70b-versatile"
     }
 }

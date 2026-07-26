@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/"
+    private const val GROQ_BASE_URL = "https://api.groq.com/openai/"
 
     @Provides
     @Singleton
@@ -52,7 +52,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(NVIDIA_BASE_URL)
+            .baseUrl(GROQ_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()

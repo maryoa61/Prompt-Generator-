@@ -52,7 +52,7 @@ class GeneratePromptUseCase @Inject constructor(
             is AiPromptResult.NotConfigured -> Result(
                 template = offlineTemplate,
                 source = PromptSource.OFFLINE_FALLBACK,
-                notice = "Notice: NVIDIA API key is not configured. Using offline generation."
+                notice = "Notice: GROQ API key is not configured. Using offline generation."
             )
 
             is AiPromptResult.Failure -> Result(

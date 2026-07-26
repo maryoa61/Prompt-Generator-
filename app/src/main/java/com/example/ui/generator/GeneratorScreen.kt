@@ -227,7 +227,7 @@ fun GeneratorScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "ASKING NVIDIA AI…",
+                        text = "ASKING GROQ AI…",
                         style = MaterialTheme.typography.labelLarge,
                         letterSpacing = 1.2.sp
                     )
@@ -428,7 +428,7 @@ fun GeneratorScreen(
 @Composable
 private fun SourceBadge(source: PromptSource) {
     val (label, icon, color) = when (source) {
-        PromptSource.AI -> Triple("NVIDIA AI", Icons.Default.Bolt, Color(0xFF4CAF50))
+        PromptSource.AI -> Triple("GROQ AI", Icons.Default.Bolt, Color(0xFF4CAF50))
         PromptSource.OFFLINE_FALLBACK -> Triple("Offline Fallback", Icons.Default.CloudOff, Color(0xFFF5A623))
     }
     Row(
