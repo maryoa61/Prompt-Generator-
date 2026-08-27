@@ -6,18 +6,6 @@ Prompt generation is powered by the **NVIDIA NIM API** (build.nvidia.com), an Op
 
 ---
 
-## AI Setup (NVIDIA API)
-
-1. Create a free API key at [build.nvidia.com/settings/api-keys](https://build.nvidia.com/settings/api-keys) (starts with `nvapi-`).
-2. Copy `.env.example` to a new file named `.env` in the project root.
-3. Set `NVIDIA_API_KEY=nvapi-...` in `.env` (this file is git-ignored, so your key stays local).
-4. Optionally set `NVIDIA_MODEL=` to any model id from the [NVIDIA API Catalog](https://build.nvidia.com/models) (defaults to `nvidia/llama-3.3-nemotron-super-49b-v1.5`).
-5. Rebuild the app. The Secrets Gradle Plugin injects these values into `BuildConfig` at compile time.
-
-Without a key, the **Generate Prompt** button still works — it just uses the local template engine and shows an "Offline Fallback" badge in the output preview.
-
----
-
 ## Features
 
 - **Domain-Specific Templates**: Tailor prompt generation for multiple specialized roles:
